@@ -1,7 +1,7 @@
 streamlit
 pandas
-matplotlib
 numpy
-prophet
-openpyxlplotly
+matplotlib
 plotly
+prophet
+openpyxl
