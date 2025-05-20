@@ -4,4 +4,4 @@ matplotlib
 numpy
 prophet
 openpyxlplotly
-Poorly
+plotly
