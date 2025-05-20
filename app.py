@@ -128,6 +128,7 @@ with tab3:
     cohort = pd.DataFrame({'invoiced_amount': monthly_inv, 'collected_amount': monthly_col}).fillna(0)
     cohort['collection_rate'] = (cohort['collected_amount'] / cohort['invoiced_amount']).round(2)
     cohort = cohort.reset_index()
+    cohort['invoice_month'] = cohort['invoice_month'].astype(str)
     fig_cohort = px.bar(cohort, x='invoice_month', y='collection_rate', title="Monthly Collection Rate",
                         hover_data={'collection_rate': ':.2f'}, color_discrete_sequence=['seagreen'])
     st.plotly_chart(fig_cohort, use_container_width=True)
