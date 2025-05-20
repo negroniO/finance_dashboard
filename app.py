@@ -70,7 +70,7 @@ with tab1:
     st.markdown("### Net Cash Flow")
     monthly_summary['net_cashflow'] = monthly_summary['collected_amount'] - monthly_summary['invoiced_amount']
     fig_cf = px.bar(monthly_summary, x='month', y='net_cashflow', color=monthly_summary['net_cashflow'] >= 0,
-                    color_discrete_map={True: 'seagreen', False: 'salmon'}, title='Monthly Net Cash Flow',
+                    color_discrete_map={'Positive': 'seagreen', 'Negative': 'salmon'}, title='Monthly Net Cash Flow',
                     hover_data={'net_cashflow': ':.2f'})
     fig_cf.update_traces(hovertemplate='Net Cashflow: €%{y:,.2f}')
     fig_cf.update_layout(xaxis_tickangle=-45)
