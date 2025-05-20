@@ -1,1 +1,2 @@
 Workbook.xlsx
+.DS_Store # Add to .gitignore
