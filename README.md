@@ -1,77 +1,46 @@
-# 📊 Finance Collections Dashboard (Streamlit)
 
-This interactive Streamlit dashboard provides visual analytics and forecasting for order collections and invoices. Built using Python and Prophet, it allows finance teams to monitor cashflow, identify collection trends, and forecast DSO and payment behavior.
+# 📊 Finance Collections Dashboard
 
----
+An interactive Streamlit dashboard that visualizes financial collection performance using real invoice and payment data — anonymized for privacy.
 
-## 🔧 Features
+## 🔍 Features
 
-- Upload and analyze your Excel data (`Workbook.xlsx`)
-- Monthly breakdown of invoiced vs. collected amounts
-- Net cashflow visualizations
-- Prophet-based forecasts for:
-  - Collected amounts
-  - Days Sales Outstanding (DSO)
-- Filters by collection status and invoice date range
+- 📅 Monthly Invoiced vs Collected Tracking
+- 💸 Net Cash Flow Analysis
+- 📈 Cumulative Uncollected Debt Trend
+- 🔮 Forecasting using Facebook Prophet (Collected Amount & DSO)
+- 📦 Cohort-based Collection Rates
+- ⏳ Avg Days to Payment vs Outstanding
+- 🧾 Aging Buckets (Unpaid Debt)
+- 📂 Local Excel upload-ready
 
----
+## 🛠️ Technologies
 
-## 📂 File Structure
+- Python, Streamlit, Pandas, NumPy
+- Forecasting with Prophet
+- Matplotlib for custom plots
 
-```
-finance_dashboard/
-├── app.py               # Streamlit app
-├── Workbook.xlsx        # Your local data file
-├── requirements.txt     # Package dependencies
-├── README.md            # Project overview
-```
+## 🚀 Usage
 
----
+1. Clone the repo and navigate to the folder.
+2. Ensure `sample_data.xlsx` is present in the root.
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Run locally:
+   ```bash
+   streamlit run app.py
+   ```
 
-## ▶️ How to Run
+## 📂 Demo
 
-### 1. Clone this repo
+🔗 [Live App](https://financedashboard-msxcahyjaqchsrczymbptj.streamlit.app)
 
-```bash
-git clone https://github.com/your-username/finance-dashboard.git
-cd finance-dashboard
-```
-
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Launch Streamlit
-
-```bash
-streamlit run app.py
-```
-
-Then open the local URL shown (usually `http://localhost:8501`) in your browser.
+> Data is anonymized and safe for public demonstration.
 
 ---
 
-## 📈 Example Use Cases
+## 🤝 Contact
 
-- Monitor and compare monthly invoice and payment performance
-- Forecast future collections and DSO
-- Spot seasonal collection dips or invoice surges
-- Export results and share insights with finance teams
-
----
-
-## 📦 Built With
-
-- [Streamlit](https://streamlit.io)
-- [Prophet](https://facebook.github.io/prophet/)
-- [pandas](https://pandas.pydata.org/)
-- [matplotlib](https://matplotlib.org/)
-- [NumPy](https://numpy.org/)
-
----
-
-## 📬 Feedback & Ideas?
-
-Feel free to open an issue or connect with me on [LinkedIn](https://www.linkedin.com/). I'd love to hear how you're using this or what you'd like to see next.
+For collaboration or questions, feel free to reach out via [LinkedIn](https://www.linkedin.com/in/your-profile).
