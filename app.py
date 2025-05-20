@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,7 +8,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 st.set_page_config(page_title="Finance Dashboard", layout="wide")
-st.title("Finance Collections Dashboard")
+st.title("📊 Finance Collections Dashboard")
 
 # Load data
 file_path = "sample_data.xlsx"
@@ -29,23 +30,19 @@ df = df[(df['invoice_post_date'] >= pd.to_datetime(selected_range[0])) & (df['in
 st.sidebar.markdown("---")
 st.sidebar.markdown("[GitHub Repo](https://github.com/negroniO/finance_dashboard)")
 
-# Dates & monthly keys
-df['invoice_post_date'] = pd.to_datetime(df['invoice_post_date'], errors='coerce')
+# Convert dates
 df['collection_date'] = pd.to_datetime(df['collection_date'], errors='coerce')
-df['invoiced_month'] = df['invoice_post_date'].dt.to_period('M').astype(str)
-df['collection_month'] = df['collection_date'].dt.to_period('M').astype(str)
+df['invoice_post_date'] = pd.to_datetime(df['invoice_post_date'], errors='coerce')
+df['collection_month'] = df['collection_date'].dt.to_period('M')
+df['invoiced_month'] = df['invoice_post_date'].dt.to_period('M')
 
 # Summary Data
 monthly_collected = df[df['collection_status'] == 'Paid'].groupby('collection_month')['order_amount'].sum()
 monthly_invoiced = df[df['invoice'].str.startswith('II', na=False)].groupby('invoiced_month')['order_amount'].sum()
 
-monthly_summary = pd.merge(
-    monthly_invoiced.reset_index(name='invoiced_amount'),
-    monthly_collected.reset_index(name='collected_amount'),
-    left_on='invoiced_month',
-    right_on='collection_month',
-    how='outer'
-)
+monthly_summary = pd.merge(monthly_invoiced.reset_index(name='invoiced_amount'),
+                           monthly_collected.reset_index(name='collected_amount'),
+                           left_on='invoiced_month', right_on='collection_month', how='outer')
 monthly_summary = monthly_summary.rename(columns={'invoiced_month': 'month'}).drop(columns=['collection_month'])
 monthly_summary = monthly_summary.fillna(0)
 monthly_summary['month'] = monthly_summary['month'].astype(str)
@@ -67,35 +64,31 @@ with tab1:
         go.Bar(name="Invoiced", x=monthly_summary['month'], y=monthly_summary['invoiced_amount'], hovertemplate='Invoiced: €%{y:,.2f}<extra></extra>', marker_color='skyblue'),
         go.Bar(name="Collected", x=monthly_summary['month'], y=monthly_summary['collected_amount'], hovertemplate='Collected: €%{y:,.2f}<extra></extra>', marker_color='seagreen')
     ])
-    fig.update_layout(barmode='group', xaxis_tickangle=-45)
+    fig.update_layout(barmode='group', xaxis_tickangle=-45, height=500)
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### Net Cash Flow")
     monthly_summary['net_cashflow'] = monthly_summary['collected_amount'] - monthly_summary['invoiced_amount']
-    monthly_summary['cashflow_label'] = np.where(monthly_summary['net_cashflow'] >= 0, 'Positive', 'Negative')
-    fig_cf = px.bar(
-        monthly_summary,
-        x='month',
-        y='net_cashflow',
-        color='cashflow_label',
-        color_discrete_map={'Positive': 'seagreen', 'Negative': 'salmon'},
-        title='Monthly Net Cash Flow',
-        hover_data={'net_cashflow': ':.2f'}
-    )
+    fig_cf = px.bar(monthly_summary, x='month', y='net_cashflow', color=monthly_summary['net_cashflow'] >= 0,
+                    color_discrete_map={True: 'seagreen', False: 'salmon'}, title='Monthly Net Cash Flow',
+                    hover_data={'net_cashflow': ':.2f'})
     fig_cf.update_traces(hovertemplate='Net Cashflow: €%{y:,.2f}')
+    fig_cf.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_cf, use_container_width=True)
 
     st.markdown("### Cumulative Uncollected Debt")
     monthly_summary['cum_invoiced'] = monthly_summary['invoiced_amount'].cumsum()
     monthly_summary['cum_collected'] = monthly_summary['collected_amount'].cumsum()
     monthly_summary['cumulative_debt'] = monthly_summary['cum_invoiced'] - monthly_summary['cum_collected']
-    fig_debt = px.area(monthly_summary, x='month', y='cumulative_debt', title="Cumulative Uncollected Debt Over Time")
+    fig_debt = px.area(monthly_summary, x='month', y='cumulative_debt', title="Cumulative Uncollected Debt Over Time",
+                       hover_data={'cumulative_debt': ':.2f'})
+    fig_debt.update_traces(hovertemplate='Cumulative Debt: €%{y:,.2f}')
     st.plotly_chart(fig_debt, use_container_width=True)
 
 with tab2:
     st.markdown("### Forecast Settings")
-    forecast_period = st.slider("Forecast Horizon (months)", 3, 24, 6)
-    training_months = st.slider("Train on Recent (months)", 6, len(monthly_summary), len(monthly_summary))
+    forecast_period = st.slider("Forecast Horizon (months)", min_value=3, max_value=24, value=6)
+    training_months = st.slider("Train on Recent (months)", min_value=6, max_value=len(monthly_summary), value=len(monthly_summary))
 
     st.markdown("### Collected Amount Forecast")
     df_prophet = monthly_summary[['month', 'collected_amount']].copy()
@@ -135,8 +128,8 @@ with tab3:
     cohort = pd.DataFrame({'invoiced_amount': monthly_inv, 'collected_amount': monthly_col}).fillna(0)
     cohort['collection_rate'] = (cohort['collected_amount'] / cohort['invoiced_amount']).round(2)
     cohort = cohort.reset_index()
-    cohort['invoice_month'] = cohort['invoice_month'].astype(str)
-    fig_cohort = px.bar(cohort, x='invoice_month', y='collection_rate', title="Monthly Collection Rate", hover_data={'collection_rate': ':.2f'}, color_discrete_sequence=['seagreen'])
+    fig_cohort = px.bar(cohort, x='invoice_month', y='collection_rate', title="Monthly Collection Rate",
+                        hover_data={'collection_rate': ':.2f'}, color_discrete_sequence=['seagreen'])
     st.plotly_chart(fig_cohort, use_container_width=True)
 
     st.markdown("### Days to Payment vs Days Outstanding")
@@ -159,5 +152,6 @@ with tab3:
     labels = ['0–30', '31–60', '61–90', '91–120', '120+']
     df['aging_bucket'] = pd.cut(df['days_outstanding'], bins=bins, labels=labels, right=False)
     aging = df[df['collection_date'].isna()].groupby('aging_bucket')['order_amount'].sum().reset_index(name='unpaid_amount')
-    fig_aging = px.bar(aging, x='aging_bucket', y='unpaid_amount', title="Unpaid Amount by Aging Bucket", color_discrete_sequence=['tomato'])
+    fig_aging = px.bar(aging, x='aging_bucket', y='unpaid_amount', title="Unpaid Amount by Aging Bucket",
+                       hover_data={'unpaid_amount': ':.2f'}, color_discrete_sequence=['tomato'])
     st.plotly_chart(fig_aging, use_container_width=True)
