@@ -68,13 +68,21 @@ with tab1:
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### Net Cash Flow")
-    monthly_summary['net_cashflow'] = monthly_summary['collected_amount'] - monthly_summary['invoiced_amount']
-    fig_cf = px.bar(monthly_summary, x='month', y='net_cashflow', color=monthly_summary['net_cashflow'] >= 0,
-                    color_discrete_map={'Positive': 'seagreen', 'Negative': 'salmon'}, title='Monthly Net Cash Flow',
-                    hover_data={'net_cashflow': ':.2f'})
+    monthly_summary['cashflow_label'] = np.where(monthly_summary['net_cashflow'] >= 0, 'Positive', 'Negative')
+
+    fig_cf = px.bar(
+        monthly_summary,
+        x='month',
+        y='net_cashflow',
+        color='cashflow_label',
+        color_discrete_map={'Positive': 'seagreen', 'Negative': 'salmon'},
+        title='Monthly Net Cash Flow',
+        hover_data={'net_cashflow': ':.2f'}
+    )
     fig_cf.update_traces(hovertemplate='Net Cashflow: €%{y:,.2f}')
     fig_cf.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_cf, use_container_width=True)
+
 
     st.markdown("### Cumulative Uncollected Debt")
     monthly_summary['cum_invoiced'] = monthly_summary['invoiced_amount'].cumsum()
