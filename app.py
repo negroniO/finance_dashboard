@@ -1,10 +1,11 @@
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 from prophet import Prophet
 from datetime import datetime
+import plotly.graph_objects as go
+import plotly.express as px
 
 st.set_page_config(page_title="Finance Dashboard", layout="wide")
 st.title("Finance Collections Dashboard")
@@ -18,7 +19,7 @@ except FileNotFoundError:
     st.stop()
 
 # Sidebar Filters
-st.sidebar.header("🔍 Filter Data")
+st.sidebar.header("Filter Data")
 selected_status = st.sidebar.multiselect("Collection Status", options=df['collection_status'].unique(), default=list(df['collection_status'].unique()))
 df = df[df['collection_status'].isin(selected_status)]
 
@@ -47,7 +48,7 @@ monthly_summary = monthly_summary.fillna(0)
 monthly_summary['month'] = monthly_summary['month'].astype(str)
 
 # KPIs
-st.markdown("### 🔢 Key Metrics")
+st.markdown("Key Metrics")
 col1, col2, col3 = st.columns(3)
 col1.metric("Total Invoiced", f"€{df['order_amount'].sum():,.0f}")
 col2.metric("Total Collected", f"€{df[df['collection_status'] == 'Paid']['order_amount'].sum():,.0f}")
@@ -55,113 +56,69 @@ monthly_summary['DSO'] = ((monthly_summary['invoiced_amount'].cumsum() - monthly
 col3.metric("Avg DSO", f"{monthly_summary['DSO'].mean():.1f} days")
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["Performance", "Forecasts", "Risk Insights"])
+tab1, tab2 = st.tabs(["Performance", "Forecasts"])
 
 with tab1:
-    st.markdown("Monthly Invoiced vs Collected")
-    st.caption("This chart compares revenue issued vs revenue collected month by month.")
-    x = np.arange(len(monthly_summary))
-    width = 0.35
-    fig, ax = plt.subplots(figsize=(12, 5))
-    ax.bar(x - width/2, monthly_summary['invoiced_amount'], width, label='Invoiced', color='#1E90FF')
-    ax.bar(x + width/2, monthly_summary['collected_amount'], width, label='Collected', color='#2E8B57')
-    ax.set_xticks(x)
-    ax.set_xticklabels(monthly_summary['month'], rotation=45)
-    ax.set_ylabel("Amount (EUR)")
-    ax.legend()
-    st.pyplot(fig)
+    st.markdown("Invoiced vs Collected (Interactive)")
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=monthly_summary['month'], y=monthly_summary['invoiced_amount'], name='Invoiced', marker_color='skyblue'))
+    fig.add_trace(go.Bar(x=monthly_summary['month'], y=monthly_summary['collected_amount'], name='Collected', marker_color='seagreen'))
+    fig.update_layout(barmode='group', xaxis_tickangle=-45, height=500)
+    st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("Net Cash Flow")
-    st.caption("Net cash flow = Collected - Invoiced per month.")
     monthly_summary['net_cashflow'] = monthly_summary['collected_amount'] - monthly_summary['invoiced_amount']
-    fig_cf, ax_cf = plt.subplots(figsize=(12, 5))
-    colors = monthly_summary['net_cashflow'].apply(lambda x: '#2E8B57' if x >= 0 else '#FFA07A')
-    ax_cf.bar(monthly_summary['month'], monthly_summary['net_cashflow'], color=colors)
-    ax_cf.axhline(0, linestyle='--', color='black')
-    ax_cf.set_ylabel("Net Cash Flow (€)")
-    ax_cf.set_xlabel("Month")
-    ax_cf.tick_params(axis='x', rotation=45)
-    st.pyplot(fig_cf)
+    net_fig = px.bar(monthly_summary, x='month', y='net_cashflow', title='Monthly Net Cash Flow (Collected - Invoiced)',
+                     color=monthly_summary['net_cashflow'] >= 0, color_discrete_map={True: 'seagreen', False: 'salmon'})
+    net_fig.update_layout(xaxis_tickangle=-45)
+    st.plotly_chart(net_fig, use_container_width=True)
 
     st.markdown("Cumulative Uncollected Debt")
     monthly_summary['cum_invoiced'] = monthly_summary['invoiced_amount'].cumsum()
     monthly_summary['cum_collected'] = monthly_summary['collected_amount'].cumsum()
     monthly_summary['cumulative_debt'] = monthly_summary['cum_invoiced'] - monthly_summary['cum_collected']
-    fig_debt, ax_debt = plt.subplots(figsize=(12, 5))
-    ax_debt.plot(monthly_summary['month'], monthly_summary['cumulative_debt'], marker='o', color='darkorange')
-    ax_debt.fill_between(monthly_summary['month'], monthly_summary['cumulative_debt'], color='#ffdd99', alpha=0.5)
-    ax_debt.axhline(0, linestyle='--', color='black')
-    ax_debt.set_ylabel("Cumulative Debt (€)")
-    ax_debt.tick_params(axis='x', rotation=45)
-    st.pyplot(fig_debt)
+    fig_debt = px.area(monthly_summary, x='month', y='cumulative_debt', title="Cumulative Uncollected Debt Over Time", color_discrete_sequence=["orange"])
+    st.plotly_chart(fig_debt, use_container_width=True)
 
 with tab2:
-    st.markdown("Forecast: Collected Amount")
+    st.markdown("Forecast Settings")
+    forecast_period = st.slider("Forecast Horizon (months)", min_value=3, max_value=24, value=6)
+    training_months = st.slider("Train Model On Most Recent (months)", min_value=6, max_value=len(monthly_summary), value=len(monthly_summary))
+
+    # Collected Amount Forecast
+    st.markdown("Collected Amount Forecast")
     df_prophet = monthly_summary[['month', 'collected_amount']].copy()
     df_prophet.columns = ['ds', 'y']
     df_prophet['ds'] = pd.to_datetime(df_prophet['ds'])
+    df_prophet = df_prophet.tail(training_months)
+
     model = Prophet()
     model.fit(df_prophet)
-    future = model.make_future_dataframe(periods=6, freq='M')
+    future = model.make_future_dataframe(periods=forecast_period, freq='M')
     forecast = model.predict(future)
-    fig1 = model.plot(forecast)
-    st.pyplot(fig1)
 
-    st.markdown("Forecast: DSO")
+    fig1 = px.line(forecast, x='ds', y='yhat', title='Forecasted Monthly Collected Amount')
+    fig1.add_traces([
+        go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], mode='lines', line=dict(dash='dot'), name='Upper'),
+        go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], mode='lines', line=dict(dash='dot'), name='Lower')
+    ])
+    st.plotly_chart(fig1, use_container_width=True)
+
+    # DSO Forecast
+    st.markdown("#### DSO Forecast")
     df_prophet_dso = monthly_summary[['month', 'DSO']].copy()
     df_prophet_dso.columns = ['ds', 'y']
     df_prophet_dso['ds'] = pd.to_datetime(df_prophet_dso['ds'])
+    df_prophet_dso = df_prophet_dso.tail(training_months)
+
     model_dso = Prophet()
     model_dso.fit(df_prophet_dso)
-    future_dso = model_dso.make_future_dataframe(periods=6, freq='M')
+    future_dso = model_dso.make_future_dataframe(periods=forecast_period, freq='M')
     forecast_dso = model_dso.predict(future_dso)
-    fig2 = model_dso.plot(forecast_dso)
-    st.pyplot(fig2)
 
-with tab3:
-    st.markdown("Collection Rate by Invoice Month")
-    paid_df = df[df['collection_status'] == 'Paid'].copy()
-    df['invoice_month'] = df['invoice_post_date'].dt.to_period('M')
-    paid_df['invoice_month'] = paid_df['invoice_post_date'].dt.to_period('M')
-    monthly_invoiced = df.groupby('invoice_month')['order_amount'].sum()
-    monthly_collected = paid_df.groupby('invoice_month')['order_amount'].sum()
-    cohort_summary = pd.DataFrame({
-        'invoiced_amount': monthly_invoiced,
-        'collected_amount': monthly_collected
-    }).fillna(0)
-    cohort_summary['collection_rate'] = (cohort_summary['collected_amount'] / cohort_summary['invoiced_amount']).round(2)
-    cohort_summary_plot = cohort_summary.reset_index()
-    fig_cohort, ax_cohort = plt.subplots(figsize=(12, 6))
-    ax_cohort.bar(cohort_summary_plot['invoice_month'].astype(str), cohort_summary_plot['collection_rate'], color='#2E8B57')
-    ax_cohort.axhline(1.0, linestyle='--', color='gray')
-    ax_cohort.set_ylim(0, 1.1)
-    ax_cohort.set_ylabel("Collection Rate")
-    ax_cohort.tick_params(axis='x', rotation=45)
-    st.pyplot(fig_cohort)
-
-    st.markdown("Avg Days to Payment vs Outstanding")
-    today = pd.to_datetime('today')
-    df['effective_end_date'] = df['collection_date'].fillna(today)
-    df['days_to_payment'] = (df['collection_date'] - df['invoice_post_date']).dt.days
-    df['days_outstanding'] = (df['effective_end_date'] - df['invoice_post_date']).dt.days
-    monthly_metrics = df.groupby('invoice_month').agg(
-        avg_days_to_payment=('days_to_payment', 'mean'),
-        avg_days_outstanding=('days_outstanding', 'mean')
-    ).reset_index()
-    fig_days, ax_days = plt.subplots(figsize=(12, 6))
-    ax_days.plot(monthly_metrics['invoice_month'].astype(str), monthly_metrics['avg_days_to_payment'], label='To Payment', marker='o')
-    ax_days.plot(monthly_metrics['invoice_month'].astype(str), monthly_metrics['avg_days_outstanding'], label='Outstanding', marker='o')
-    ax_days.set_ylabel("Days")
-    ax_days.legend()
-    ax_days.tick_params(axis='x', rotation=45)
-    st.pyplot(fig_days)
-
-    st.markdown("Unpaid Amount by Aging Bucket")
-    bins = [0, 31, 61, 91, 121, float('inf')]
-    labels = ['0–30', '31–60', '61–90', '91–120', '120+']
-    df['aging_bucket'] = pd.cut(df['days_outstanding'], bins=bins, labels=labels, right=False)
-    aging_summary = df[df['collection_date'].isna()].groupby('aging_bucket')['order_amount'].sum().reset_index(name='unpaid_amount')
-    fig_aging, ax_aging = plt.subplots(figsize=(8, 5))
-    ax_aging.bar(aging_summary['aging_bucket'], aging_summary['unpaid_amount'], color='tomato')
-    ax_aging.set_ylabel("Amount (€)")
-    st.pyplot(fig_aging)
+    fig2 = px.line(forecast_dso, x='ds', y='yhat', title='Forecasted DSO')
+    fig2.add_traces([
+        go.Scatter(x=forecast_dso['ds'], y=forecast_dso['yhat_upper'], mode='lines', line=dict(dash='dot'), name='Upper'),
+        go.Scatter(x=forecast_dso['ds'], y=forecast_dso['yhat_lower'], mode='lines', line=dict(dash='dot'), name='Lower')
+    ])
+    st.plotly_chart(fig2, use_container_width=True)
