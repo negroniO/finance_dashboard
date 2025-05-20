@@ -19,6 +19,23 @@ except FileNotFoundError:
     st.stop()
 
 # Sidebar Filters
+st.sidebar.subheader("Time Granularity")
+granularity = st.sidebar.radio("Group Data By", ["Month", "Week", "Day"], index=0)
+
+# Adjust invoice and collection dates to datetime (if not already)
+df['invoice_post_date'] = pd.to_datetime(df['invoice_post_date'], errors='coerce')
+df['collection_date'] = pd.to_datetime(df['collection_date'], errors='coerce')
+
+# Create dynamic grouping keys
+if granularity == "Day":
+    df['invoiced_period'] = df['invoice_post_date'].dt.date
+    df['collected_period'] = df['collection_date'].dt.date
+elif granularity == "Week":
+    df['invoiced_period'] = df['invoice_post_date'].dt.to_period('W').apply(lambda r: r.start_time.date())
+    df['collected_period'] = df['collection_date'].dt.to_period('W').apply(lambda r: r.start_time.date())
+else:
+    df['invoiced_period'] = df['invoice_post_date'].dt.to_period('M').astype(str)
+    df['collected_period'] = df['collection_date'].dt.to_period('M').astype(str)
 st.sidebar.header("Filter Data")
 selected_status = st.sidebar.multiselect("Collection Status", options=df['collection_status'].unique(), default=list(df['collection_status'].unique()))
 df = df[df['collection_status'].isin(selected_status)]
@@ -33,8 +50,8 @@ st.sidebar.markdown("[GitHub Repo](https://github.com/negroniO/finance_dashboard
 # Convert dates
 df['collection_date'] = pd.to_datetime(df['collection_date'], errors='coerce')
 df['invoice_post_date'] = pd.to_datetime(df['invoice_post_date'], errors='coerce')
-df['collection_month'] = df['collection_date'].dt.to_period('M')
-df['invoiced_month'] = df['invoice_post_date'].dt.to_period('M')
+df['collection_month'] = df['collected_period']
+df['invoiced_month'] = df['invoiced_period']
 
 # Summary Data
 monthly_collected = df[df['collection_status'] == 'Paid'].groupby('collection_month')['order_amount'].sum()
