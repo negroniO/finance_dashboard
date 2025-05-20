@@ -43,4 +43,4 @@ An interactive Streamlit dashboard that visualizes financial collection performa
 
 ## 🤝 Contact
 
-For collaboration or questions, feel free to reach out via [LinkedIn](https://www.linkedin.com/in/your-profile).
+For collaboration or questions, feel free to reach out via [LinkedIn](https://www.linkedin.com/in/george-iordanous/).
