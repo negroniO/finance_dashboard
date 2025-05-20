@@ -120,17 +120,34 @@ with tab2:
 
 with tab3:
     st.markdown("### Collection Rate by Invoice Month")
+
     df['invoice_month'] = df['invoice_post_date'].dt.to_period('M')
     paid_df = df[df['collection_status'] == 'Paid'].copy()
     paid_df['invoice_month'] = paid_df['invoice_post_date'].dt.to_period('M')
+
     monthly_inv = df.groupby('invoice_month')['order_amount'].sum()
     monthly_col = paid_df.groupby('invoice_month')['order_amount'].sum()
-    cohort = pd.DataFrame({'invoiced_amount': monthly_inv, 'collected_amount': monthly_col}).fillna(0)
+
+    cohort = pd.DataFrame({
+        'invoiced_amount': monthly_inv,
+        'collected_amount': monthly_col
+    }).fillna(0)
+
     cohort['collection_rate'] = (cohort['collected_amount'] / cohort['invoiced_amount']).round(2)
     cohort = cohort.reset_index()
-    fig_cohort = px.bar(cohort, x='invoice_month', y='collection_rate', title="Monthly Collection Rate",
-                        hover_data={'collection_rate': ':.2f'}, color_discrete_sequence=['seagreen'])
+
+    cohort['invoice_month'] = cohort['invoice_month'].astype(str)
+
+    fig_cohort = px.bar(
+        cohort,
+        x='invoice_month',
+        y='collection_rate',
+        title="Monthly Collection Rate",
+        hover_data={'collection_rate': ':.2f'},
+        color_discrete_sequence=['seagreen']
+    )
     st.plotly_chart(fig_cohort, use_container_width=True)
+
 
     st.markdown("### Days to Payment vs Days Outstanding")
     today = pd.to_datetime('today')
