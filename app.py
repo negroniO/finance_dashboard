@@ -12,10 +12,6 @@ import requests
 st.set_page_config(page_title="Finance Dashboard", layout="wide")
 st.title("📊 Finance Collections Dashboard")
 
-# Load data
-st.markdown("### Upload Your Excel File (optional)")
-uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
-
 # Load default sample if no file is uploaded
 st.markdown("### Upload Your Excel File (optional)")
 uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
