@@ -6,6 +6,8 @@ from prophet import Prophet
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
+import io
+import requests
 
 st.set_page_config(page_title="Finance Dashboard", layout="wide")
 st.title("📊 Finance Collections Dashboard")
@@ -15,15 +17,19 @@ st.markdown("### Upload Your Excel File (optional)")
 uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
 
 # Load default sample if no file is uploaded
+st.markdown("### Upload Your Excel File (optional)")
+uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
+
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
     st.success("✅ Using uploaded file.")
 else:
     try:
-        df = pd.read_excel("https://github.com/negroniO/finance_dashboard/blob/main/sample_data.xlsx")
-        st.info("ℹ️ Using default sample file from 'sample/sample_data.xlsx'.")
-    except FileNotFoundError:
-        st.error("No file uploaded and default sample file not found.")
+        # Correct raw URL
+        df = pd.read_excel("https://raw.githubusercontent.com/negroniO/finance_dashboard/main/sample_data.xlsx")
+        st.info("ℹ️ Using default sample file from GitHub.")
+    except Exception as e:
+        st.error(f"❌ Failed to load default sample file: {e}")
         st.stop()
 
 # Sidebar Filters
