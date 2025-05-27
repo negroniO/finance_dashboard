@@ -11,12 +11,20 @@ st.set_page_config(page_title="Finance Dashboard", layout="wide")
 st.title("📊 Finance Collections Dashboard")
 
 # Load data
-uploaded_file = st.file_uploader("Upload your excel file", type=["xlsx"])
+st.markdown("### Upload Your Excel File (optional)")
+uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
+
+# Load default sample if no file is uploaded
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
+    st.success("✅ Using uploaded file.")
 else:
-    st.warning("Please upload an excel file to proceed.")
-    st.stop()
+    try:
+        df = pd.read_excel("sample/sample_data.xlsx")
+        st.info("ℹ️ Using default sample file from 'sample/sample_data.xlsx'.")
+    except FileNotFoundError:
+        st.error("No file uploaded and default sample file not found.")
+        st.stop()
 
 # Sidebar Filters
 st.sidebar.header("Filter Data")
