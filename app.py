@@ -20,7 +20,7 @@ if uploaded_file is not None:
     st.success("✅ Using uploaded file.")
 else:
     try:
-        df = pd.read_excel("sample/sample_data.xlsx")
+        df = pd.read_excel("https://github.com/negroniO/finance_dashboard/blob/main/sample_data.xlsx")
         st.info("ℹ️ Using default sample file from 'sample/sample_data.xlsx'.")
     except FileNotFoundError:
         st.error("No file uploaded and default sample file not found.")
