@@ -15,7 +15,7 @@ uploaded_file = st.file_uploader("Upload your excel file", type=["xlsx"])
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
 else:
-    st.warning("Please upload an excel file to proceed."
+    st.warning("Please upload an excel file to proceed.")
     st.stop()
 
 # Sidebar Filters
