@@ -11,11 +11,11 @@ st.set_page_config(page_title="Finance Dashboard", layout="wide")
 st.title("📊 Finance Collections Dashboard")
 
 # Load data
-file_path = "sample_data.xlsx"
-try:
-    df = pd.read_excel(file_path)
-except FileNotFoundError:
-    st.error("sample_data.xlsx not found. Please upload the cleaned Excel file.")
+uploaded_file = st.file_uploader("Upload your excel file", type=["xlsx"])
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
+else:
+    st.warning("Please upload an excel file to proceed."
     st.stop()
 
 # Sidebar Filters
